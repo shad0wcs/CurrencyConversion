@@ -5,6 +5,42 @@ from requests.structures import CaseInsensitiveDict
 
 app = FastAPI()
 
+available_currency = {
+    'EUR': 'Euro',
+    'USD': 'US Dollar',
+    'JPY': 'Japanese Yen',
+    'BGN': 'Bulgarian Lev',
+    'CZK': 'Czech Republic Koruna',
+    'DKK': 'Danish Krone',
+    'GBP': 'British Pound Sterling',
+    'HUF': 'Hungarian Forint',
+    'PLN': 'Polish Zloty',
+    'RON': 'Romanian Leu',
+    'SEK': 'Swedish Krona',
+    'CHF': 'Swiss Franc',
+    'ISK': 'Icelandic Króna',
+    'NOK': 'Norwegian Krone',
+    'HRK': 'Croatian Kuna',
+    'RUB': 'Russian Ruble',
+    'TRY': 'Turkish Lira',
+    'AUD': 'Australian Dollar',
+    'BRL': 'Brazilian Real',
+    'CAD': 'Canadian Dollar',
+    'CNY': 'Chinese Yuan',
+    'HKD': 'Hong Kong Dollar',
+    'IDR': 'Indonesian Rupiah',
+    'ILS': 'Israeli New Sheqel',
+    'INR': 'Indian Rupee',
+    'KRW': 'South Korean Won',
+    'MXN': 'Mexican Peso',
+    'MYR': 'Malaysian Ringgit',
+    'NZD': 'New Zealand Dollar',
+    'PHP': 'Philippine Peso',
+    'SGD': 'Singapore Dollar',
+    'THB': 'Thai Baht',
+    'ZAR': 'South African Rand',
+}
+
 
 def get_exchange_rate(base_currency: str, final_currency: str) -> float:
     url = "https://api.freecurrencyapi.com/v1/latest?apikey=fca_live_IBCijLqCB9AmAPIMJrcydRgvVYnaKjNCnIV8RyqQ"
@@ -21,6 +57,11 @@ def get_exchange_rate(base_currency: str, final_currency: str) -> float:
     if final_currency not in data['data']:
         raise HTTPException(status_code=400, detail="Invalid currency")
     return data['data'][final_currency]
+
+
+@app.get('/available_currency/')
+async def get_available_currency():
+    return available_currency
 
 
 @app.get('/convert/')
