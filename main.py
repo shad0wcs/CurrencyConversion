@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, status, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 import uvicorn
 import requests
@@ -62,6 +62,24 @@ class User(BaseModel):
 
 def create_jwt_token(data: dict):
     return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_user_from_token(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get('sub')
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Token has expired',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Invalid token',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
 
 
 def get_user(username: str):
