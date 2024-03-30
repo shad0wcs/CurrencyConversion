@@ -1,5 +1,6 @@
+from typing import Optional, Annotated
 from fastapi import FastAPI, status, HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import uvicorn
 import requests
 from pydantic import BaseModel
@@ -49,13 +50,16 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 SECRET_KEY = 'somesecretkey'
 ALGORITHM = 'HS256'
 
-USERS_DATA = [
-    {'username': 'user1', 'password': 'user1pass'}
-]
+USERS_DATA = {
+    'admin': {'username': 'admin1', 'password': 'admin1pass', 'role': 'admin'},
+    'user': {'username': 'user1', 'password': 'user1pass', 'role': 'user'}
+}
 
 
 class User(BaseModel):
     username: str
+    password: str
+    role: Optional[str] = None
     email: str | None = None
     full_name: str | None = None
 
@@ -83,10 +87,44 @@ def get_user_from_token(token: str = Depends(oauth2_scheme)):
 
 
 def get_user(username: str):
-    for user in USERS_DATA:
-        if user.get('username') == username:
-            return user
+    if username in USERS_DATA:
+        user_data = USERS_DATA[username]
+        return User(**user_data)
     return None
+
+
+@app.get('/token/')
+async def login(user_data: Annotated[OAuth2PasswordRequestForm, Depends(oauth2_scheme)]):
+    user_data_from_db = get_user(user_data.username)
+    if user_data_from_db is None or user_data_from_db != user_data.password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Invalid credentials',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    return {'token': create_jwt_token({'sub': user_data.username})}
+
+
+@app.get('/admin/')
+def get_admin_info(current_user: str = Depends(get_user_from_token)):
+    user_data = get_user(current_user)
+    if user_data.role != 'user':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Not authorized',
+        )
+    return {'message': 'welcome back, admin'}
+
+
+@app.get('/user/')
+def get_user_info(current_user: str = Depends(get_user_from_token)):
+    user_data = get_user(current_user)
+    if user_data.role != 'user':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Not authorized',
+        )
+    return {'message': 'welcome back, user'}
 
 
 def get_exchange_rate(base_currency: str, final_currency: str) -> float:
