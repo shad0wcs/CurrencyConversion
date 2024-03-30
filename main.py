@@ -1,6 +1,8 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
 import uvicorn
 import requests
+from pydantic import BaseModel
 from requests.structures import CaseInsensitiveDict
 
 app = FastAPI()
@@ -41,6 +43,14 @@ available_currency = {
     'ZAR': 'South African Rand',
 }
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
+
+
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+
 
 def get_exchange_rate(base_currency: str, final_currency: str) -> float:
     url = "https://api.freecurrencyapi.com/v1/latest?apikey=fca_live_IBCijLqCB9AmAPIMJrcydRgvVYnaKjNCnIV8RyqQ"
@@ -49,7 +59,7 @@ def get_exchange_rate(base_currency: str, final_currency: str) -> float:
     headers["apikey"] = "fca_live_IBCijLqCB9AmAPIMJrcydRgvVYnaKjNCnIV8RyqQ"
 
     resp = requests.get(url)
-    
+
     data = resp.json()
 
     if 'data' not in data:
