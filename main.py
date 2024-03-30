@@ -51,8 +51,8 @@ SECRET_KEY = 'somesecretkey'
 ALGORITHM = 'HS256'
 
 USERS_DATA = {
-    'admin': {'username': 'admin1', 'password': 'admin1pass', 'role': 'admin'},
-    'user': {'username': 'user1', 'password': 'user1pass', 'role': 'user'}
+    'admin': {'username': 'admin', 'password': 'adminpass', 'role': 'admin'},
+    'user': {'username': 'user', 'password': 'userpass', 'role': 'user'}
 }
 
 
@@ -60,8 +60,6 @@ class User(BaseModel):
     username: str
     password: str
     role: Optional[str] = None
-    email: str | None = None
-    full_name: str | None = None
 
 
 def create_jwt_token(data: dict):
@@ -93,22 +91,23 @@ def get_user(username: str):
     return None
 
 
-@app.get('/token/')
-async def login(user_data: Annotated[OAuth2PasswordRequestForm, Depends(oauth2_scheme)]):
+@app.post('/token/')
+async def login(user_data: User):
     user_data_from_db = get_user(user_data.username)
-    if user_data_from_db is None or user_data_from_db != user_data.password:
+    if user_data_from_db is None or user_data_from_db.password != user_data.password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Invalid credentials',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    return {'token': create_jwt_token({'sub': user_data.username})}
+
+    return {'access_token': create_jwt_token({'sub': user_data_from_db.username}), 'token_type': 'Bearer'}
 
 
 @app.get('/admin/')
-def get_admin_info(current_user: str = Depends(get_user_from_token)):
+async def get_admin_info(current_user: str = Depends(get_user_from_token)):
     user_data = get_user(current_user)
-    if user_data.role != 'user':
+    if user_data.role != 'admin':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Not authorized',
@@ -117,7 +116,7 @@ def get_admin_info(current_user: str = Depends(get_user_from_token)):
 
 
 @app.get('/user/')
-def get_user_info(current_user: str = Depends(get_user_from_token)):
+async def get_user_info(current_user: str = Depends(get_user_from_token)):
     user_data = get_user(current_user)
     if user_data.role != 'user':
         raise HTTPException(
