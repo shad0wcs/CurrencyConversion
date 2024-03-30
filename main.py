@@ -4,6 +4,7 @@ import uvicorn
 import requests
 from pydantic import BaseModel
 from requests.structures import CaseInsensitiveDict
+import jwt
 
 app = FastAPI()
 
@@ -45,11 +46,29 @@ available_currency = {
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
+SECRET_KEY = 'somesecretkey'
+ALGORITHM = 'HS256'
+
+USERS_DATA = [
+    {'username': 'user1', 'password': 'user1pass'}
+]
+
 
 class User(BaseModel):
     username: str
     email: str | None = None
     full_name: str | None = None
+
+
+def create_jwt_token(data: dict):
+    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_user(username: str):
+    for user in USERS_DATA:
+        if user.get('username') == username:
+            return user
+    return None
 
 
 def get_exchange_rate(base_currency: str, final_currency: str) -> float:
