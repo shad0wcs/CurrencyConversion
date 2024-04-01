@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt
-from models import User
+from schemas.user import User
 from requests.structures import CaseInsensitiveDict
 import requests
 
