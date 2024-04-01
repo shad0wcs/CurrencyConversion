@@ -92,16 +92,16 @@ def get_user(username: str):
 
 
 @app.post('/token/')
-async def login(user_data: User):
-    user_data_from_db = get_user(user_data.username)
-    if user_data_from_db is None or user_data_from_db.password != user_data.password:
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user_data = get_user(form_data.username)
+    if user_data is None or user_data.password != form_data.password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Invalid credentials',
             headers={'WWW-Authenticate': 'Bearer'},
         )
 
-    return {'access_token': create_jwt_token({'sub': user_data_from_db.username}), 'token_type': 'Bearer'}
+    return {'access_token': create_jwt_token({'sub': user_data.username}), 'token_type': 'Bearer'}
 
 
 @app.get('/admin/')
